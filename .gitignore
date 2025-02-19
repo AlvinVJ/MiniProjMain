@@ -179,3 +179,8 @@ cython_debug/
 *.tiff
 *.svg
 *.webp
+
+
+kaggle/
+TrainingModel/
+*.pth

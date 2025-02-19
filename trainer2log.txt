@@ -1,0 +1,21 @@
+C:\Users\hp\Documents\Projects\MiniProjMain\venv\Lib\site-packages\keras\src\layers\convolutional\base_conv.py:107: UserWarning: Do not pass an `input_shape`/`input_dim` argument to a layer. When using Sequential models, prefer using an `Input(shape)` object as the first layer in the model instead.
+  super().__init__(activity_regularizer=activity_regularizer, **kwargs)
+2025-02-20 01:57:57.616633: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CEpoch 2/10
+445/445 ━━━━━━━━━━━━━━━━━━━━ 55s 122ms/step - accuracy: 0.8806 - loss: 0.3263 - val_accuracy: 0.7736 - val_loss: 0.5843
+Epoch 3/10
+445/445 ━━━━━━━━━━━━━━━━━━━━ 54s 122ms/step - accuracy: 0.9428 - loss: 0.1750 - val_accuracy: 0.8255 - val_loss: 0.4809
+Epoch 4/10
+445/445 ━━━━━━━━━━━━━━━━━━━━ 55s 122ms/step - accuracy: 0.9635 - loss: 0.0920 - val_accuracy: 0.8302 - val_loss: 0.7541
+Epoch 5/10
+445/445 ━━━━━━━━━━━━━━━━━━━━ 55s 124ms/step - accuracy: 0.9844 - loss: 0.0725 - val_accuracy: 0.8255 - val_loss: 1.0812
+Epoch 6/10
+445/445 ━━━━━━━━━━━━━━━━━━━━ 47s 106ms/step - accuracy: 0.9863 - loss: 0.0475 - val_accuracy: 0.8726 - val_loss: 1.0435
+Epoch 7/10
+445/445 ━━━━━━━━━━━━━━━━━━━━ 44s 98ms/step - accuracy: 0.9973 - loss: 0.0205 - val_accuracy: 0.8491 - val_loss: 1.6939
+Epoch 8/10
+445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 97ms/step - accuracy: 0.9916 - loss: 0.0232 - val_accuracy: 0.8349 - val_loss: 2.8862
+Epoch 9/10
+445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 97ms/step - accuracy: 0.9988 - loss: 0.0072 - val_accuracy: 0.8632 - val_loss: 1.7669
+Epoch 10/10
+431/445 ━━━━━━━━━━━━━━━━━━━━ 1s 102ms/step - accur432/445 ━━━━━━━━━━━━━━━━━━━━ 1s 102ms/step - accur433/445 ━━━━━━━━━━━━━━━━━━━━ 1s 102ms/step - accur434/445 ━━━━━━━━━━━━━━━━━━━━ 1s 102ms/step - accur435/445 ━━━━━━━━━━━━━━━━━━━━ 1s 102ms/step - accur436/445 ━━━━━━━━━━━━━━━━━━━━ 0s 102ms/step - accur437/445 ━━━━━━━━━━━━━━━━━━━━ 0s 102ms/step - accur438/445 ━━━━━━━━━━━━━━━━━━━━ 0s 102ms/step - accur439/445 ━━━━━━━━━━━━━━━━━━━━ 0s 102ms/step - accur440/445 ━━━━━━━━━━━━━━━━━━━━ 0s 102ms/step - accur441/445 ━━━━━━━━━━━━━━━━━━━━ 0s 103ms/step - accur442/445 ━━━━━━━━━━━━━━━━━━━━ 0s 103ms/step - accur443/445 ━━━━━━━━━━━━━━━━━━━444/445 ━━━━━━━━━━━━━━━━━━━━ 0s 103ms/step - accuracy: 1.445/445 ━━━━━━━━━━━━━━━━━━━━ 0s 103ms/step - accuracy: 1.445/445 ━━━━━━━━━━━━━━━━━━━━ 47s 105ms/step 
+- accuracy: 1.0000 - loss: 6.2943e-04 - val_accuracy: 0.8255 - val_loss: 3.6775
