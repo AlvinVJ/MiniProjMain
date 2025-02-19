@@ -1,21 +1,20 @@
-C:\Users\hp\Documents\Projects\MiniProjMain\venv\Lib\site-packages\keras\src\layers\convolutional\base_conv.py:107: UserWarning: Do not pass an `input_shape`/`input_dim` argument to a layer. When using Sequential models, prefer using an `Input(shape)` object as the first layer in the model instead.
-  super().__init__(activity_regularizer=activity_regularizer, **kwargs)
-2025-02-20 01:57:57.616633: I tensorflow/core/platform/cpu_feature_guard.cc:210] This TensorFlow binary is optimized to use available CEpoch 2/10
-445/445 ━━━━━━━━━━━━━━━━━━━━ 55s 122ms/step - accuracy: 0.8806 - loss: 0.3263 - val_accuracy: 0.7736 - val_loss: 0.5843
+Epoch 1/10
+445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 96ms/step - accuracy: 0.6914 - loss: 1.0565 - val_accuracy: 0.7783 - val_loss: 0.4616
+Epoch 2/10
+445/445 ━━━━━━━━━━━━━━━━━━━━ 42s 95ms/step - accuracy: 0.8709 - loss: 0.3136 - val_accuracy: 0.8113 - val_loss: 0.4296
 Epoch 3/10
-445/445 ━━━━━━━━━━━━━━━━━━━━ 54s 122ms/step - accuracy: 0.9428 - loss: 0.1750 - val_accuracy: 0.8255 - val_loss: 0.4809
+445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 96ms/step - accuracy: 0.9514 - loss: 0.1326 - val_accuracy: 0.8255 - val_loss: 0.4582
 Epoch 4/10
-445/445 ━━━━━━━━━━━━━━━━━━━━ 55s 122ms/step - accuracy: 0.9635 - loss: 0.0920 - val_accuracy: 0.8302 - val_loss: 0.7541
+445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 95ms/step - accuracy: 0.9679 - loss: 0.0664 - val_accuracy: 0.8019 - val_loss: 1.0225
 Epoch 5/10
-445/445 ━━━━━━━━━━━━━━━━━━━━ 55s 124ms/step - accuracy: 0.9844 - loss: 0.0725 - val_accuracy: 0.8255 - val_loss: 1.0812
+445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 96ms/step - accuracy: 0.9828 - loss: 0.0452 - val_accuracy: 0.8491 - val_loss: 1.0974
 Epoch 6/10
-445/445 ━━━━━━━━━━━━━━━━━━━━ 47s 106ms/step - accuracy: 0.9863 - loss: 0.0475 - val_accuracy: 0.8726 - val_loss: 1.0435
+445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 96ms/step - accuracy: 0.9964 - loss: 0.0192 - val_accuracy: 0.8066 - val_loss: 1.9651
 Epoch 7/10
-445/445 ━━━━━━━━━━━━━━━━━━━━ 44s 98ms/step - accuracy: 0.9973 - loss: 0.0205 - val_accuracy: 0.8491 - val_loss: 1.6939
+445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 96ms/step - accuracy: 0.9989 - loss: 0.0053 - val_accuracy: 0.8208 - val_loss: 1.3478
 Epoch 8/10
-445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 97ms/step - accuracy: 0.9916 - loss: 0.0232 - val_accuracy: 0.8349 - val_loss: 2.8862
+445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 96ms/step - accuracy: 0.9952 - loss: 0.0058 - val_accuracy: 0.8821 - val_loss: 1.1646
 Epoch 9/10
-445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 97ms/step - accuracy: 0.9988 - loss: 0.0072 - val_accuracy: 0.8632 - val_loss: 1.7669
+445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 96ms/step - accuracy: 1.0000 - loss: 4.8284e-05 - val_accuracy: 0.8443 - val_loss: 1.6737
 Epoch 10/10
-431/445 ━━━━━━━━━━━━━━━━━━━━ 1s 102ms/step - accur432/445 ━━━━━━━━━━━━━━━━━━━━ 1s 102ms/step - accur433/445 ━━━━━━━━━━━━━━━━━━━━ 1s 102ms/step - accur434/445 ━━━━━━━━━━━━━━━━━━━━ 1s 102ms/step - accur435/445 ━━━━━━━━━━━━━━━━━━━━ 1s 102ms/step - accur436/445 ━━━━━━━━━━━━━━━━━━━━ 0s 102ms/step - accur437/445 ━━━━━━━━━━━━━━━━━━━━ 0s 102ms/step - accur438/445 ━━━━━━━━━━━━━━━━━━━━ 0s 102ms/step - accur439/445 ━━━━━━━━━━━━━━━━━━━━ 0s 102ms/step - accur440/445 ━━━━━━━━━━━━━━━━━━━━ 0s 102ms/step - accur441/445 ━━━━━━━━━━━━━━━━━━━━ 0s 103ms/step - accur442/445 ━━━━━━━━━━━━━━━━━━━━ 0s 103ms/step - accur443/445 ━━━━━━━━━━━━━━━━━━━444/445 ━━━━━━━━━━━━━━━━━━━━ 0s 103ms/step - accuracy: 1.445/445 ━━━━━━━━━━━━━━━━━━━━ 0s 103ms/step - accuracy: 1.445/445 ━━━━━━━━━━━━━━━━━━━━ 47s 105ms/step 
-- accuracy: 1.0000 - loss: 6.2943e-04 - val_accuracy: 0.8255 - val_loss: 3.6775
+445/445 ━━━━━━━━━━━━━━━━━━━━ 43s 96ms/step - accuracy: 1.0000 - loss: 4.5218e-07 - val_accuracy: 0.8538 - val_loss: 1.7456

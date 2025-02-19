@@ -6,6 +6,7 @@ import tensorflow as tf
 import numpy as np
 import os
 import cv2
+import torch
 
 train = ImageDataGenerator(rescale=1/255)
 validation = ImageDataGenerator(rescale=1/255)
@@ -28,3 +29,5 @@ model = tf.keras.models.Sequential([
 
 model.compile(loss='binary_crossentropy', optimizer=RMSprop(learning_rate=0.001), metrics=['accuracy'])
 model_fit = model.fit(train_dataset, epochs=10, validation_data=validation_dataset)
+
+torch.save(model, 'manual_trained.pth')
