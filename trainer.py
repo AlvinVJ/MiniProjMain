@@ -529,14 +529,14 @@ for model_name, model in models_dict.items():
     model.compile(optimizer=Adam(learning_rate=1e-3), loss=focal_loss(gamma=2., alpha=0.25), metrics=['accuracy'])
     
     # Train the model
-    model.fit(X_train, y_train, epochs=20, validation_data=(X_val, y_val), callbacks=[early_stopping, reduce_lr],verbose=1)
+    model.fit(X_train, y_train, epochs=9, validation_data=(X_val, y_val), callbacks=[early_stopping, reduce_lr],verbose=1)
     
     # Restore best weights
     if early_stopping.best_weights is not None:
         model.set_weights(early_stopping.best_weights)
         print("Restored best model weights")
-    torch.save(model, f'{model_name}.pth')
-    print("Evaluation...")
+        model.save(f"{model_name}.keras")
+        print("Evaluation...")
     # Predict validation set
     y_pred = model.predict(X_val, verbose=0)
     if isinstance(y_pred, tf.RaggedTensor):

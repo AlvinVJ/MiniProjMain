@@ -11,8 +11,8 @@ import torch
 train = ImageDataGenerator(rescale=1/255)
 validation = ImageDataGenerator(rescale=1/255)
 
-train_dataset = train.flow_from_directory('TrainingModel/basedata/training/', target_size=(200,200), batch_size=3, class_mode='binary')
-validation_dataset = train.flow_from_directory('TrainingModel/basedata/validation/', target_size=(200,200), batch_size=3, class_mode='binary')
+train_dataset = train.flow_from_directory('TrainingModel/basedata/training/', target_size=(200,200), class_mode='binary')
+validation_dataset = train.flow_from_directory('TrainingModel/basedata/validation/', target_size=(200,200), class_mode='binary')
 
 
 model = tf.keras.models.Sequential([
@@ -30,4 +30,4 @@ model = tf.keras.models.Sequential([
 model.compile(loss='binary_crossentropy', optimizer=RMSprop(learning_rate=0.001), metrics=['accuracy'])
 model_fit = model.fit(train_dataset, epochs=10, validation_data=validation_dataset)
 
-torch.save(model, 'manual_trained.pth')
+model.save("manual_trained.keras")
