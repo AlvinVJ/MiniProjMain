@@ -183,5 +183,12 @@ cython_debug/
 
 kaggle/
 TrainingModel/
+data/
+models/
+models2/
+src/
+testing/
+training/
+validing/
 *.pth
 *.keras
