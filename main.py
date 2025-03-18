@@ -1,109 +1,147 @@
 import cv2
 import numpy as np
 import time
+import threading
 from ultralytics import YOLO
 import os
 from collections import deque
 from twilio.rest import Client
+from datetime import datetime
+from itertools import islice
+from dotenv import load_dotenv
 
+# Load environment variables
+load_dotenv()
 
-account_sid = OS.environ.get('TWILIO_ACCOUNT_SID')
-auth_token = OS.environ.get('TWILIO_AUTH_TOKEN')
-
+# Twilio Credentials
+account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
 client = Client(account_sid, auth_token)
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
-model = YOLO("yolo_model.pt")  # Load the YOLO model
+# Load YOLO model
+model = YOLO("yolo_model.pt")
 
-cap = cv2.VideoCapture(0)  # Capture from webcam
+# Open webcam
+cap = cv2.VideoCapture(0)  
 
 cap.set(3, 640)  # Width
 cap.set(4, 480)  # Height
 
-# Check if webcam is opened
 if not cap.isOpened():
     print("Error: Could not access the webcam.")
     exit()
 
-# Function to be called when a fall is detected
+# Fall detection parameters
+fall_detection_window = 7  # seconds
+frame_rate = 30  # Manually set frame rate (ensure consistency)
+frame_count_for_window = fall_detection_window * frame_rate  # Frames in 7 seconds
+
+fall_flag = None  # Timestamp when fall starts
+fall_queue = deque(maxlen=frame_count_for_window)  # Track falls
+video_buffer = deque(maxlen=frame_rate * 120)  # Stores last 2 min of frames
+
+# Thread lock to synchronize video buffer access
+buffer_lock = threading.Lock()
+
+def capture_frames():
+    """ Continuously capture frames and store them in video_buffer """
+    while True:
+        success, frame = cap.read()
+        if not success:
+            break
+        with buffer_lock:
+            video_buffer.append(frame.copy())  # Store frame for 2 min buffer
+
+# Start background thread for video capture
+capture_thread = threading.Thread(target=capture_frames, daemon=True)
+capture_thread.start()
+
 def handle_fall_detection():
-    call = client.calls.create(
-                        url='http://35.225.45.126:5000/voice',
-                        to='+918921357368',
-                        from_='+12568073757'
-                    )
+    """ Function to be called when a continuous fall is detected """
+    print("Fall detected. Initiating call...")
+    # call = client.calls.create(
+    #     url='http://35.225.45.126:5000/voice',
+    #     to='+918921357368',
+    #     from_='+12568073757'
+    # )
+    # print(f"Call initiated: {call.sid}")
 
-    print(call.sid)
+    # Save the buffered video
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"fall_detected_{timestamp}.avi"
 
-# Variables to manage fall detection over 7 seconds
-fall_detection_window = 3  # 7 seconds window for detecting fall
-frame_rate = int(cap.get(cv2.CAP_PROP_FPS))  # Get frame rate of the webcam
-frame_count_for_7_seconds = fall_detection_window * frame_rate  # Number of frames in 7 seconds
-print(frame_count_for_7_seconds)
+    # Lock buffer while writing video
+    with buffer_lock:
+        if not video_buffer:
+            print("Error: No frames in buffer!")
+            return
+        height, width, _ = video_buffer[0].shape
+        out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'XVID'), frame_rate, (width, height))
+        
+        for frame in video_buffer:
+            out.write(frame)
 
-# Initialize a deque (queue) to store fall detection results (1 for fall, 0 for no fall)
-fall_queue = deque(maxlen=frame_count_for_7_seconds)
+        out.release()
+
+    print(f"Saved pre-fall video: {filename}")
 
 while True:
-    # Read frame from webcam
-    success, frame = cap.read()
-    if not success:
-        break
+    with buffer_lock:
+        if len(video_buffer) == 0:
+            continue  # Wait until frames are in buffer
 
-    # Run YOLO on the frame
+        frame = video_buffer[-1]  # Process the latest frame
+    
+    # Run YOLO model
     results = model(frame, conf=0.5)
-
-    # Annotate the frame with bounding boxes and text
-    annotated_frame = frame.copy()  # Make a copy to draw on
-
-    # Flag to check if a fall is detected
-    fall_detected_in_frame = False
+    annotated_frame = frame.copy()
+    fall_detected = False  
 
     if results:
         for result in results:
             for box in result.boxes:
-                class_id = int(box.cls[0])  # Get class ID
-                confidence = float(box.conf[0])  # Confidence score
-                x1, y1, x2, y2 = map(int, box.xyxy[0])  # Bounding box
+                class_id = int(box.cls[0])  
+                confidence = float(box.conf[0])  
+                x1, y1, x2, y2 = map(int, box.xyxy[0])  
 
-                # **Fixed Class Label Mapping**
-                if class_id == 1:  # Assuming '0' is the standing class
+                if class_id == 1:  # Standing
                     label = "Standing"
-                    color = (0, 255, 0)  # Green for standing
-                elif class_id == 0:  # Assuming '1' is the fall class
+                    color = (0, 255, 0)
+                elif class_id == 0:  # Fall detected
                     label = "Fall Detected!"
-                    color = (0, 0, 255)  # Red for fall
-                    fall_detected_in_frame = True  # Mark fall detection
+                    color = (0, 0, 255)
+                    fall_detected = True
 
-                # Draw bounding box and label
+                # Draw annotations
                 cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), color, 3)
                 cv2.putText(annotated_frame, f"{label} {confidence:.2f}",
                             (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
-    # Append the fall detection result (1 for fall, 0 for no fall) to the queue
-    fall_queue.append(1 if fall_detected_in_frame else 0)
-    print(str(sum(fall_queue)) + '/' + str(frame_count_for_7_seconds))
+    # Track falls
+    fall_queue.append(1 if fall_detected else 0)
+    print(f"Fall count: {sum(fall_queue)}/{frame_count_for_window}")
 
-    # Once the queue reaches the required number of frames, check for the number of falls
-    if len(fall_queue) == frame_count_for_7_seconds:
-        # Count the number of falls (1s) in the queue
-        fall_count = sum(fall_queue)
-        
-        # If the number of falls is more than half the window size, call the function
-        if fall_count > frame_count_for_7_seconds // 2:
-            handle_fall_detection()
+    # Fall flag management
+    if fall_detected:
+        if fall_flag is None:
+            fall_flag = time.time()  # Start flag when fall starts
+    else:
+        if len(fall_queue) >= 2 and sum(islice(fall_queue, len(fall_queue) - 2, None)) == 0:
+            fall_flag = None
 
-        # Clear the queue after calling the function
-        fall_queue.clear()
+    # Decision to call function
+    if fall_flag is not None and (time.time() - fall_flag >= fall_detection_window):
+        handle_fall_detection()
+        fall_flag = None  # Reset flag
+        fall_queue.clear()  # Clear queue after action
 
-    # Display the frame with annotations
+    # Display output
     cv2.imshow("YOLO Fall Detection", annotated_frame)
-
-    # Exit the loop if the user presses the 'q' key
+    
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
 
-# Release webcam and close windows
 cap.release()
 cv2.destroyAllWindows()
