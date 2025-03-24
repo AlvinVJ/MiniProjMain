@@ -40,6 +40,7 @@ cam_name = None
 def on_camera_select(i):
     global selected_camera_idx, cam_name
     selected_camera_idx = int(data['camera_index'][i])
+    location = data["locations"][i]
     cam_name = data['cameras'][i]
     root.destroy()
 # Create camera selection GUI
@@ -62,7 +63,7 @@ if selected_camera_idx is None:
 rtsp_url = f"rtsp://{server_ip}:{mediamtx_port}/stream_{uid}_cam{selected_camera_idx}"
 
 # Initialize fall detection parameters
-fall_detection_window = 5  # seconds
+fall_detection_window = 3  # seconds
 frame_rate = 30  # Assuming 30 FPS
 frame_count_for_window = fall_detection_window * frame_rate  # Frames in 5 sec
 fall_flag = None  # Timestamp when fall starts
@@ -174,19 +175,20 @@ def capture_frames():
 
 
 def handle_fall_detection():
+    global last_call_time, location
     """ Function to be called when a continuous fall is detected """
     global fall_flag  # Ensure we modify the global variable
 
     # Save video before fall
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     #filename = f"fall_detected_{timestamp}.avi"
-    if time.time() - last_call_time < 120:
+    if last_call_time is not None and time.time() - last_call_time < 120:
         print("[INFO] Cooldown period active. Skipping fall detection...")
         return
     with buffer_lock:
         if len(video_buffer) < (video_buffer.maxlen*0.6):
             print("[ERROR] No frames available in buffer")
-            return'
+            return
 
         # 🔹 Clear buffers to remove old frames
         video_buffer.clear()
@@ -195,7 +197,7 @@ def handle_fall_detection():
         # 🔹 Reset fall flag with a cooldown
         fall_flag = None  
         print("[ALERT] Fall detected. Saving video...")
-        sslf.call(phone, server_ip)
+        sslf.call(phone, server_ip, location)
         print("[COOLDOWN] Pausing fall detection for 10 seconds...")
         last_call_time = time.time()  # Cooldown period to prevent re-triggering
 

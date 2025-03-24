@@ -6,11 +6,11 @@ import os
 account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
 auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
 
-def call(phone, server_ip):
+def call(phone, server_ip, location):
     client = Client(account_sid, auth_token)
 
     call = client.calls.create(
-                            url=f'http://{server_ip}:5000/voice',
+                            url=f'http://{server_ip}:5000/voice/<{location}>',
                             to=f'+91{phone}',
                             from_='+12568073757'
                         )
