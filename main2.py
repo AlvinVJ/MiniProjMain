@@ -8,8 +8,8 @@ from collections import deque
 from datetime import datetime
 from google.cloud import firestore
 from ultralytics import YOLO
-from twilio.rest import Client
 from dotenv import load_dotenv
+import SafeSoloLifeFunctions as sslf
 
 # Load environment variables
 load_dotenv()
@@ -17,7 +17,6 @@ load_dotenv()
 # Twilio Credentials
 account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
 auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
-client = Client(account_sid, auth_token)
 
 # Load Firestore database
 db = firestore.Client()
@@ -25,12 +24,13 @@ username = "user1"
 password_typed = "pass1"
 doc = db.collection("logins").stream()
 user = None
-phoe = None
+phone = None
 for d in doc:
     if d.id == username:
         if d.to_dict()["password"] == password_typed:
             print("Login successful")
             user = d.to_dict()["id"].strip()
+            phone = db.collection("adminData").document(user).get().to_dict()["phoneNumber"]
         else:
             print("Login failed")
 
@@ -63,7 +63,7 @@ def load_cameras():
         l.append([cam_name, cam_idx])
     for cam in l:
         cameras[cam[0]] = {
-            "rtsp_url" : f"http://{server_ip}:{port}/{user}_cam{cam[1]}", 
+            "rtsp_url" : f"rtsp://{server_ip}:{port}/stream_{user}_cam{cam[1]}", 
             "fall_flag": None,
             "fall_queue": deque(maxlen=frame_count_for_window),
             "video_buffer": deque(maxlen=video_buffer_size),
@@ -72,67 +72,59 @@ def load_cameras():
     print(f"Loaded {len(cameras)} cameras from Firestore")
     print(cameras)
 
-# Stream frames to RTSP
-def stream_to_rtsp(camera_name):
-    """ Continuously reads frames from queue and streams to RTSP """
+# Start FFmpeg stream from Python
+def start_ffmpeg_stream(camera_name):
+    """ Start streaming to RTSP using FFmpeg. """
     rtsp_url = cameras[camera_name]["rtsp_url"]
-    frame_queue = cameras[camera_name]["frame_queue"]
+    camera_index = 0  # Change if using multiple cameras
 
     ffmpeg_cmd = [
-        "ffmpeg", "-re", "-f", "rawvideo", "-pixel_format", "bgr24", "-video_size", "640x480", "-i", "-",
+        "ffmpeg", "-f", "dshow", "-rtbufsize", "100M",
+        "-i", f'video="{camera_name.strip()}"',  # Change for different cameras
+        "-r", "30", "-s", "640x480", "-b:v", "1000k",
         "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
-        "-f", "rtsp", rtsp_url
+        "-rtsp_transport", "tcp", "-f", "rtsp", rtsp_url
     ]
-    process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
-
-    while True:
-        if not frame_queue.empty():
-            frame = frame_queue.get()
-            process.stdin.write(frame.tobytes())
-
-# Fall detection handler
-def handle_fall_detection(camera_name):
-    print(f"Fall detected in {camera_name}. Initiating response...")
-
-    # Save the buffered video
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"fall_{camera_name}_{timestamp}.avi"
-
-    video_buffer = cameras[camera_name]["video_buffer"]
-    height, width, _ = video_buffer[0].shape
-    out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'XVID'), frame_rate, (width, height))
-
-    for frame in video_buffer:
-        out.write(frame)
+    print(" ".join(ffmpeg_cmd))
     
-    out.release()
-    print(f"Saved pre-fall video for {camera_name}: {filename}")
-
-    # Reset fall flag
-    cameras[camera_name]["fall_flag"] = None
-    cameras[camera_name]["fall_queue"].clear()
+    return subprocess.Popen(ffmpeg_cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 # Process each camera stream
 def process_camera_stream(camera_name):
-    cap = cv2.VideoCapture(cameras[camera_name]["rtsp_url"])
+    cap = cv2.VideoCapture(0)  # Read from webcam
     if not cap.isOpened():
         print(f"Error: Cannot access {camera_name}")
         return
 
-    frame_queue = cameras[camera_name]["frame_queue"]
-    threading.Thread(target=stream_to_rtsp, args=(camera_name,), daemon=True).start()
+    video_buffer = cameras[camera_name]["video_buffer"]
+    rtsp_url = cameras[camera_name]["rtsp_url"]
+    
+    # FFmpeg command to take raw frames from OpenCV and send to RTSP
+    ffmpeg_cmd = [
+        "ffmpeg", "-y", "-f", "rawvideo", "-pixel_format", "bgr24",
+        "-video_size", "640x480", "-framerate", "30", "-i", "-",  # OpenCV as input
+        "-c:v", "libx264", "-preset", "ultrafast", "-tune", "zerolatency",
+        "-f", "rtsp", "-rtsp_transport", "tcp", rtsp_url
+    ]
+
+    print(f"Starting FFmpeg stream to {rtsp_url}")
+
+    ffmpeg_process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE)
 
     while True:
         success, frame = cap.read()
         if not success:
             break
 
-        # Add frame to video buffer
-        cameras[camera_name]["video_buffer"].append(frame.copy())
+        # Add frame to buffer
+        video_buffer.append(frame.copy())
 
-        # Send frame to RTSP queue
-        if not frame_queue.full():
-            frame_queue.put(frame.copy())
+        # **Send frame to FFmpeg**
+        try:
+            ffmpeg_process.stdin.write(frame.tobytes())
+        except BrokenPipeError:
+            print(f"[ERROR] FFmpeg pipeline broken for {camera_name}")
+            break
 
         # YOLO processing
         results = model(frame, conf=0.5)
@@ -156,10 +148,44 @@ def process_camera_stream(camera_name):
         if cameras[camera_name]["fall_flag"] is not None and (time.time() - cameras[camera_name]["fall_flag"] >= fall_detection_window):
             handle_fall_detection(camera_name)
 
+    cap.release()
+    ffmpeg_process.stdin.close()
+    ffmpeg_process.wait()
+# Stop FFmpeg stream
+
+# Fall detection handler
+def handle_fall_detection(camera_name):
+    print(f"Fall detected in {camera_name}. Initiating response...")
+
+    # Save the buffered video
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    filename = f"fall_{camera_name}_{timestamp}.avi"
+
+    video_buffer = cameras[camera_name]["video_buffer"]
+    if len(video_buffer) == 0:
+        print(f"No frames available to save for {camera_name}")
+        return
+
+    height, width, _ = video_buffer[0].shape
+    out = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*'XVID'), frame_rate, (width, height))
+
+    for frame in video_buffer:
+        out.write(frame)
+    
+    out.release()
+    print(f"Saved pre-fall video for {camera_name}: {filename}")
+    sslf.call(phone, server_ip)
+
+
+    # Reset fall flag
+    cameras[camera_name]["fall_flag"] = None
+    cameras[camera_name]["fall_queue"].clear()
+
 # Start processing all cameras
 def main():
     load_cameras()
     threads = []
+    
     for camera_name in cameras:
         t = threading.Thread(target=process_camera_stream, args=(camera_name,), daemon=True)
         threads.append(t)

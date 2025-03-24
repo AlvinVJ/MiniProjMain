@@ -5,4 +5,4 @@ hls
 
 rtsp
 
-ffmpeg -f dshow -rtbufsize 100M -i video="HP Wide Vision HD Camera" -r 30 -s 640x480 -b:v 1000k -c:v libx264 -preset ultrafast -tune zerolatency -rtsp_transport tcp -f rtsp rtsp://35.225.45.126:8554/mystream
+ffmpeg -f dshow -rtbufsize 100M -i video="HP Wide Vision HD Camera" -r 30 -s 640x480 -b:v 1000k -c:v libx264 -preset ultrafast -tune zerolatency -rtsp_transport tcp -f rtsp rtsp://34.133.182.109:8554/mystream

@@ -1,5 +1,25 @@
 # functions.py
 import subprocess
+from twilio.rest import Client
+import os
+
+account_sid = os.environ.get('TWILIO_ACCOUNT_SID')
+auth_token = os.environ.get('TWILIO_AUTH_TOKEN')
+
+def call(phone, server_ip):
+    client = Client(account_sid, auth_token)
+
+    call = client.calls.create(
+                            url=f'http://{server_ip}:5000/voice',
+                            to=f'+91{phone}',
+                            from_='+12568073757'
+                        )
+
+    print(call.sid)
+
+    # To get the call status
+    call = client.calls(call.sid).fetch()
+    print(call.status)
 
 def start_camera_stream(camera_name, rtsp_url):
     """
@@ -40,3 +60,7 @@ def start_camera_stream(camera_name, rtsp_url):
     # Log output for debugging purposes
     print(f"FFmpeg stdout: {stdout.decode()}")
     print(f"FFmpeg stderr: {stderr.decode()}")
+
+
+
+
