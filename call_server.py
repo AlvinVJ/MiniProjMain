@@ -12,16 +12,20 @@ def get_links():
     try:
         data = request.get_json()
         uid = data.get("uid", "").strip()  # Ensure we get a valid UID
-
+        print(uid)
         if not uid:
             return jsonify({"error": "UID is required"}), 400
 
+        users_ref = db.collection("adminData").document(uid)
+        doc = users_ref.get()
+        server_ip = db.collection("config").document("mediamtx_data").get().to_dict()["ip"]
+        port = db.collection("config").document("mediamtx_data").get().to_dict()["port"]
+
         if doc.exists:
-            l = get_server_ip()
             user_data = doc.to_dict()
             links = []
             for i in range(len(user_data["camera_index"])):
-                links.append(f"rtsp://{l[0]}:{l[1]}/stream_{uid}_cam{user_data['camera_index'][i]}")
+                links.append(f"rtsp://{server_ip}:{port}/stream_{uid}_cam{i+1}")
             return jsonify({"links" : links}), 200
         else:
             return jsonify({"error": "User not found"}), 404
@@ -30,40 +34,39 @@ def get_links():
         print("Error:", str(e))
         return jsonify({"error": "An error occurred", "details": str(e)}), 500
 
-@app.route("/get_server_ip", methods=["POST"])
-def get_server_ip():
-    users_ref = db.collection("adminData").document(uid)
-    doc = users_ref.get()
-    server_ip = db.collection("config").document("mediamtx_data").get().to_dict()["ip"]
-    mediamtx_port = db.collection("config").document("mediamtx_data").get().to_dict()["port"]
-    flask_port = db.collection("config").document("flask_data").get().to_dict()["port"]
-    return server_ip, mediamtx_port, flask_port
 
-@app.route("/get_uid", methods=["POST"])
-def get_uid():
+@app.route("/setUserDetails", methods = ["POST"])
+def setUserDetails():
     try:
         data = request.get_json()
-        username = data.get("username", "").strip() # Ensure we get a valid phone number
-        password = data.get("password", "").strip() # Ensure we get a valid phone number
+        print(data)
+        users_ref = db.collection("adminData")
+        user_ref_doc = users_ref.document(data["localId"])
+        user_ref_doc.set({
+                "userName": data["username"],
+                "phoneNumber": data["phoneNumber"],
+                "email": data["email"]
 
-        if not username or not password:
-            return jsonify({"error": "Username and password are required"}), 400
+            })
+        cameras_ref = user_ref_doc.collection("cameras").document("camera_details")
+        d = {}
+        for i in range(int(data["numCameras"])):
+            d[f"cam{i+1}Idx"] = data["cameras"][i]["index"]
+            d[f"cam{i+1}Location"] = data["cameras"][i]["location"]
+            d[f"cam{i+1}Name"] = data["cameras"][i]["name"]
+        cameras_ref.set(d)
 
-        doc = db.collection("adminData").where("phoneNumber", "==", phone).stream()
-        for d in doc:
-            return jsonify({"uid": d.id}), 200
-
-        return jsonify({"error": "User not found"}), 404
+        return jsonify({"message": "success"})
 
     except Exception as e:
-        print("Error:", str(e))
-        return jsonify({"error": "An error occurred", "details": str(e)}), 500
+        print(Exception)
+        return jsonify({"message": "An error occurred"})
 
-@app.route("/voice", methods=["GET", "POST"])  # ✅ Force POST method
-def voice():
+@app.route("/voice/<location>", methods=["GET", "POST"])  # ✅ Force POST method
+def voice(location):
     print("Received Twilio request")  # ✅ Debugging log
     response = VoiceResponse()
-    response.say("Automated call from safe solo life. a fall has been detected at registered location. verify person's safety")
+    response.say(f"Automated call from safe solo life. a fall has been detected at {location}. verify person's safety")
     return Response(str(response), mimetype="application/xml")
 
 @app.route("/ping", methods = ["POST"])
