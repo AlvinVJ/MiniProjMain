@@ -21,6 +21,7 @@ db = firestore.Client()
 uid = os.environ.get('UID')
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 phone = None
+location = "home"
 
 # Fetch camera & RTSP server details from Firestore
 data = db.collection("adminData").document(uid).get().to_dict()
@@ -38,7 +39,7 @@ cam_name = None
 
 # Function to handle camera selection
 def on_camera_select(i):
-    global selected_camera_idx, cam_name
+    global selected_camera_idx, cam_name, location
     selected_camera_idx = int(data['camera_index'][i])
     location = data["locations"][i]
     cam_name = data['cameras'][i]
