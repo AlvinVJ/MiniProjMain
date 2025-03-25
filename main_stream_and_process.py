@@ -181,8 +181,6 @@ def handle_fall_detection():
     global fall_flag  # Ensure we modify the global variable
 
     # Save video before fall
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    #filename = f"fall_detected_{timestamp}.avi"
     if last_call_time is not None and time.time() - last_call_time < 120:
         print("[INFO] Cooldown period active. Skipping fall detection...")
         return
