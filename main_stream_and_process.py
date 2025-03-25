@@ -134,7 +134,7 @@ def process_yolo():
 
         results = model(frame, conf=0.5)
         fall_detected = any(
-            int(box.cls[0]) == 0 for result in results for box in result.boxes
+            int(box.cls[0]) == 1 for result in results for box in result.boxes
         )
 
         # Fall tracking

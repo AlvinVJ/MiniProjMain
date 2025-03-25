@@ -25,7 +25,7 @@ def get_links():
             user_data = doc.to_dict()
             links = []
             for i in range(len(user_data["camera_index"])):
-                links.append(f"rtsp://{server_ip}:{port}/stream_{uid}_cam{i+1}")
+                links.append(f"rtsp://{server_ip}:{port}/stream_{uid}_cam{user_data["camera_index"][i]}")
             return jsonify({"links" : links}), 200
         else:
             return jsonify({"error": "User not found"}), 404
