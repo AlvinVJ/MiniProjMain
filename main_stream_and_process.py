@@ -23,7 +23,6 @@ os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 phone = None
 location = "home"
 
-# Fetch camera & RTSP server details from Firestore
 data = db.collection("adminData").document(uid).get().to_dict()
 server_info = db.collection("config").document("mediamtx_data").get().to_dict()
 server_ip, mediamtx_port = server_info["ip"], server_info["port"]
@@ -33,18 +32,16 @@ if data:
 
 model = YOLO("yolo_model.pt")
 
-# Global variables for camera selection
 selected_camera_idx = None
 cam_name = None
 
-# Function to handle camera selection
 def on_camera_select(i):
     global selected_camera_idx, cam_name, location
     selected_camera_idx = int(data['camera_index'][i])
     location = data["locations"][i]
     cam_name = data['cameras'][i]
     root.destroy()
-# Create camera selection GUI
+
 root = tk.Tk()
 root.title("Camera Selection")
 root.geometry("300x200")
@@ -60,16 +57,14 @@ if selected_camera_idx is None:
     messagebox.showerror("Error", "No camera selected")
     exit()
 
-# Construct RTSP URL
 rtsp_url = f"rtsp://{server_ip}:{mediamtx_port}/stream_{uid}_cam{selected_camera_idx}"
 
-# Initialize fall detection parameters
-fall_detection_window = 3  # seconds
-frame_rate = 30  # Assuming 30 FPS
-frame_count_for_window = fall_detection_window * frame_rate  # Frames in 5 sec
-fall_flag = None  # Timestamp when fall starts
+fall_detection_window = 3  
+frame_rate = 30  
+frame_count_for_window = fall_detection_window * frame_rate  
+fall_flag = None  
 fall_queue = deque(maxlen=frame_count_for_window)
-video_buffer_size = frame_rate * 120  # Store last 2 min of frames
+video_buffer_size = frame_rate * 120  
 video_buffer = deque(maxlen=video_buffer_size)
 last_call_time = None
 
@@ -78,10 +73,9 @@ if not cap.isOpened():
     print(f"[ERROR] Cannot access camera {selected_camera_idx}")
     exit()
 
-cap.set(3, 640)  # Width
-cap.set(4, 480)  # Height
+cap.set(3, 640)  
+cap.set(4, 480)  
 
-# Lock for buffer access
 buffer_lock = threading.Lock()
 
 def start_rtsp_stream(rtsp_url):
@@ -137,11 +131,9 @@ def process_yolo():
             int(box.cls[0]) == 1 for result in results for box in result.boxes
         )
 
-        # Fall tracking
         fall_queue.append(1 if fall_detected else 0)
         print(f"[YOLO] Fall count: {sum(fall_queue)}/{frame_count_for_window}")
 
-        # Fall flag management
         if fall_detected:
             if fall_flag is None:
                 fall_flag = time.time()
@@ -149,7 +141,6 @@ def process_yolo():
             if len(fall_queue) >= 2 and sum(list(fall_queue)[-2:]) == 0:
                 fall_flag = None
 
-        # Handle fall detection event
         if fall_flag is not None and (time.time() - fall_flag >= fall_detection_window):
             handle_fall_detection()
 
@@ -162,27 +153,21 @@ def capture_frames():
             print("[ERROR] Failed to read frame from camera")
             break
 
-        # Store frame in video buffer
         with buffer_lock:
             video_buffer.append(frame.copy())
 
-        # Send frame to YOLO queue
         try:
-            video_buffer.append(frame.copy())  # Use `put_nowait()` instead of `.full()`
+            video_buffer.append(frame.copy())  
         except queue.Full:
-            pass  # If the queue is full, discard the frame
-
-        time.sleep(1 / frame_rate)  # Maintain frame rate
-
+            pass  
+        time.sleep(1 / frame_rate)  
 
 def handle_fall_detection():
     global last_call_time, location
     """ Function to be called when a continuous fall is detected """
-    global fall_flag  # Ensure we modify the global variable
+    global fall_flag
 
-    # Save video before fall
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    #filename = f"fall_detected_{timestamp}.avi"
     if last_call_time is not None and time.time() - last_call_time < 120:
         print("[INFO] Cooldown period active. Skipping fall detection...")
         return
@@ -191,27 +176,22 @@ def handle_fall_detection():
             print("[ERROR] No frames available in buffer")
             return
 
-        # 🔹 Clear buffers to remove old frames
         video_buffer.clear()
         fall_queue.clear()
 
-        # 🔹 Reset fall flag with a cooldown
         fall_flag = None  
         print("[ALERT] Fall detected. Saving video...")
         sslf.call(phone, server_ip, location)
         print("[COOLDOWN] Pausing fall detection for 10 seconds...")
-        last_call_time = time.time()  # Cooldown period to prevent re-triggering
+        last_call_time = time.time()  
 
 
 
 
-# Start RTSP Streaming Thread
 rtsp_thread = threading.Thread(target=start_rtsp_stream, daemon=True, args=(rtsp_url,))
 rtsp_thread.start()
 
-# Start YOLO Processing Thread
 yolo_thread = threading.Thread(target=process_yolo, daemon=True)
 yolo_thread.start()
 
-# Start Frame Capture
 capture_frames()
